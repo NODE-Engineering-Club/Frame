@@ -31,6 +31,15 @@ This package contains:
 
    ros2 run arduino_bridge camera_detect --ros-args -p video_source:=0 -p show_window:=false
 
+If you're using a Raspberry Pi camera (libcamera), set `video_source:=rpicam` or pass a GStreamer pipeline prefixed with `gst:`. You can also tune the capture resolution and fps:
+
+   ros2 run arduino_bridge camera_detect --ros-args \
+     -p video_source:=rpicam -p video_width:=640 -p video_height:=480 -p video_fps:=30 -p show_window:=false
+
+Or with the launch file:
+
+   ros2 launch arduino_bridge camera_arduino_launch.py video_source:=rpicam video_width:=1280 video_height:=720 video_fps:=30
+
 Run both nodes with a single launch (recommended):
 
    ros2 launch arduino_bridge camera_arduino_launch.py

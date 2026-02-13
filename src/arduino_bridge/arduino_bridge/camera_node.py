@@ -10,11 +10,17 @@ The `arduino_serial` node already subscribes to `detected_colors` and sends
 that string over serial to the Arduino (so no extra glue is required).
 
 Parameters (ROS2):
-- `video_source` (int|string) : camera device (default 0) or path/pipeline
-- `publish_rate` (double)    : Hz (default 5.0)
-- `min_area` (int)           : minimum mask pixel count to consider a colour
-- `show_window` (bool)       : optionally display annotated frames
+- `video_source` (int|string) : camera device (default 0), path/pipeline, or the special value `rpicam` (libcamera)
+- `video_width` (int)         : capture width (default 640)
+- `video_height` (int)        : capture height (default 480)
+- `video_fps` (int)           : capture framerate (default 30)
+- `publish_rate` (double)     : Hz (default 5.0)
+- `min_area` (int)            : minimum mask pixel count to consider a colour
+- `show_window` (bool)        : optionally display annotated frames
 
+Notes:
+- Use `video_source:=rpicam` to capture from Raspberry Pi Camera (libcamera) — the node will use a GStreamer/libcamera pipeline.
+- Alternatively pass a GStreamer pipeline string prefixed with `gst:` (e.g. `gst:...`) to `video_source`.
 """
 from __future__ import annotations
 
@@ -33,11 +39,17 @@ class CameraDetectNode(Node):
 
         # parameters
         self.declare_parameter('video_source', 0)
+        self.declare_parameter('video_width', 640)
+        self.declare_parameter('video_height', 480)
+        self.declare_parameter('video_fps', 30)
         self.declare_parameter('publish_rate', 5.0)
         self.declare_parameter('min_area', 2000)
         self.declare_parameter('show_window', False)
 
         src = self.get_parameter('video_source').value
+        self.video_width = int(self.get_parameter('video_width').value)
+        self.video_height = int(self.get_parameter('video_height').value)
+        self.video_fps = int(self.get_parameter('video_fps').value)
         self.publish_rate = float(self.get_parameter('publish_rate').value)
         self.min_area = int(self.get_parameter('min_area').value)
         self.show_window = bool(self.get_parameter('show_window').value)
@@ -45,7 +57,30 @@ class CameraDetectNode(Node):
         # accept '0' or 0 or '/dev/video0' etc.
         if isinstance(src, str) and src.isdigit():
             src = int(src)
-        self._cap = cv2.VideoCapture(src)
+
+        # Support Raspberry Pi libcamera (rpicam) and GStreamer pipelines:
+        # - `rpicam` will build a libcamerasrc GStreamer pipeline using the
+        #   configured width/height/fps and open it with the GStreamer backend.
+        # - any string prefixed with `gst:` will be treated as a user-supplied
+        #   GStreamer pipeline (omit the `gst:` prefix when passed to OpenCV).
+        gst_pipeline = None
+        if isinstance(src, str):
+            lowered = src.lower()
+            if lowered in ('rpicam', 'libcamera'):
+                gst_pipeline = (
+                    f"libcamerasrc ! video/x-raw,width={self.video_width},height={self.video_height},framerate={self.video_fps}/1 "
+                    "! videoconvert ! video/x-raw,format=BGR ! appsink drop=true"
+                )
+                self.get_logger().info('Using libcamera GStreamer pipeline for rpicam')
+            elif lowered.startswith('gst:'):
+                gst_pipeline = src[4:]
+                self.get_logger().info('Using user-specified GStreamer pipeline for VideoCapture')
+
+        if gst_pipeline:
+            self._cap = cv2.VideoCapture(gst_pipeline, cv2.CAP_GSTREAMER)
+        else:
+            self._cap = cv2.VideoCapture(src)
+
         if not self._cap.isOpened():
             self.get_logger().error(f'Cannot open video source: {src}')
             raise RuntimeError(f'Cannot open video source: {src}')
