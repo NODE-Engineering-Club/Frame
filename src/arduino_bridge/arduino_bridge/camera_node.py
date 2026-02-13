@@ -10,7 +10,7 @@ The `arduino_serial` node already subscribes to `detected_colors` and sends
 that string over serial to the Arduino (so no extra glue is required).
 
 Parameters (ROS2):
-- `video_source` (int|string) : camera device (default 0), path/pipeline, or the special value `rpicam` (libcamera)
+- `video_source` (int|string) : camera device (default '0' string), path/pipeline, or the special value `rpicam` (libcamera)
 - `video_width` (int)         : capture width (default 640)
 - `video_height` (int)        : capture height (default 480)
 - `video_fps` (int)           : capture framerate (default 30)
@@ -38,7 +38,7 @@ class CameraDetectNode(Node):
         super().__init__('camera_detect')
 
         # parameters
-        self.declare_parameter('video_source', 0)
+        self.declare_parameter('video_source', '0')
         self.declare_parameter('video_width', 640)
         self.declare_parameter('video_height', 480)
         self.declare_parameter('video_fps', 30)

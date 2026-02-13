@@ -52,7 +52,7 @@ docker run -it --rm \
   --device=/dev/video0 \
   --group-add dialout \
   -v ~/ros2_ws:/ros2_ws \
-  ros2:jazzy-perception
+  ros:jazzy-perception
 ```
 
 Then inside the container:
