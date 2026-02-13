@@ -1,12 +1,15 @@
 import rclpy
+import serial
 from rclpy.node import Node
 from std_msgs.msg import String
-import serial
 
 
 class ArduinoNode(Node):
-    """Subscribes to /detected_colors and forwards the colour string
-    over serial to the Arduino, which lights the matching LEDs."""
+    """Subscribe to /detected_colors and forward colour string over serial.
+
+    Subscribes to /detected_colors and forwards the colour string over serial
+    to the Arduino, which lights the matching LEDs.
+    """
 
     def __init__(self):
         super().__init__('arduino_node')
