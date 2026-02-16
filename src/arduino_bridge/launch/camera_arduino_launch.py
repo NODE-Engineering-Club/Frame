@@ -15,7 +15,7 @@ def generate_launch_description():
     show_window = LaunchConfiguration('show_window')
 
     return LaunchDescription([
-        DeclareLaunchArgument('video_source', default_value='0', description='Camera device or pipeline'),
+        DeclareLaunchArgument('video_source', default_value='/dev/video0', description='Camera device or pipeline'),
         DeclareLaunchArgument('video_width', default_value='640', description='Camera capture width'),
         DeclareLaunchArgument('video_height', default_value='480', description='Camera capture height'),
         DeclareLaunchArgument('video_fps', default_value='30', description='Camera capture framerate'),

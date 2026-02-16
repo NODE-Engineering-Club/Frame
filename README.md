@@ -25,6 +25,8 @@ This package contains:
 
 3. Run the Arduino serial bridge (adjust `serial_port` if needed):
 
+   - The ROS node depends on the `pyserial` package. In Debian/Ubuntu containers install it via `sudo apt install python3-serial` before launching.
+
    ros2 run arduino_bridge arduino_serial --ros-args -p serial_port:=/dev/ttyACM0
 
 4. Run the camera detector (use `video_source` to change camera device). A USB webcam usually appears as `/dev/video0`:
