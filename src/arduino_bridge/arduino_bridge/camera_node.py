@@ -77,15 +77,10 @@ class CameraDetectNode(Node):
                 gst_pipeline = src[4:]
                 self.get_logger().info('Using user-specified GStreamer pipeline for VideoCapture')
 
-        capture_api = cv2.CAP_ANY
-        if isinstance(src, int) or (isinstance(src, str) and src.startswith('/dev/video')):
-            capture_api = cv2.CAP_V4L2
-            self.get_logger().info('Forcing V4L2 backend for local video device')
-
         if gst_pipeline:
             self._cap = cv2.VideoCapture(gst_pipeline, cv2.CAP_GSTREAMER)
         else:
-            self._cap = cv2.VideoCapture(src, capture_api)
+            self._cap = cv2.VideoCapture(src)
 
         if not self._cap.isOpened():
             self.get_logger().error(f'Cannot open video source: {raw_src}')
