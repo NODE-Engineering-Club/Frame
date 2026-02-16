@@ -59,20 +59,48 @@ class CameraDetectNode(Node):
         if isinstance(src, str) and src.isdigit():
             src = int(src)
 
-        # Support Raspberry Pi libcamera (rpicam) and GStreamer pipelines:
-        # - `rpicam` will build a libcamerasrc GStreamer pipeline using the
-        #   configured width/height/fps and open it with the GStreamer backend.
-        # - any string prefixed with `gst:` will be treated as a user-supplied
-        #   GStreamer pipeline (omit the `gst:` prefix when passed to OpenCV).
+        # Allow shorthand values for USB/V4L2 devices (auto-detect) and for
+        # compatibility with Raspberry Pi libcamera (`rpicam`) and custom
+        # GStreamer pipelines (`gst:`).
+        # - `usb` or `auto`  => try to find the first working `/dev/video*` device
+        # - `rpicam`         => use libcamerasrc GStreamer pipeline
+        # - `gst:...`        => use the supplied GStreamer pipeline string
         gst_pipeline = None
         if isinstance(src, str):
             lowered = src.lower()
-            if lowered in ('rpicam', 'libcamera'):
+
+            # -- usb / auto: pick the first /dev/video* that opens
+            if lowered in ('usb', 'auto', 'v4l2'):
+                import glob
+
+                candidates = sorted(glob.glob('/dev/video*'))
+                chosen = None
+                for dev in candidates:
+                    self.get_logger().debug(f'Trying V4L2 device {dev} for auto-detect')
+                    try_cap = cv2.VideoCapture(dev, cv2.CAP_V4L2)
+                    if try_cap.isOpened():
+                        chosen = dev
+                        try_cap.release()
+                        break
+                    try_cap.release()
+
+                if chosen:
+                    src = chosen
+                    self.get_logger().info(f'Auto-detected USB camera: {chosen}')
+                else:
+                    self.get_logger().warning(
+                        'video_source set to "usb/auto" but no /dev/video* device opened successfully'
+                    )
+
+            # -- rpicam (libcamera via GStreamer)
+            elif lowered in ('rpicam', 'libcamera'):
                 gst_pipeline = (
                     f"libcamerasrc ! video/x-raw,width={self.video_width},height={self.video_height},framerate={self.video_fps}/1 "
                     "! videoconvert ! video/x-raw,format=BGR ! appsink drop=true"
                 )
                 self.get_logger().info('Using libcamera GStreamer pipeline for rpicam')
+
+            # -- user-supplied GStreamer pipeline
             elif lowered.startswith('gst:'):
                 gst_pipeline = src[4:]
                 self.get_logger().info('Using user-specified GStreamer pipeline for VideoCapture')

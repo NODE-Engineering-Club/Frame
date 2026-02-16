@@ -10,6 +10,16 @@ This package contains:
 - `arduino_serial` — an existing ROS2 node that forwards the short colour string (e.g. `R`, `GB`, `RGB`, `0`) to a serial-connected Arduino.
 - `led_controller.ino` — Arduino sketch that reads the colour string over serial and switches LEDs accordingly.
 
+Prerequisites (host / container):
+
+- Install system packages used by this package:
+
+  sudo apt update && sudo apt install -y python3-serial nano
+
+You can also use rosdep to install declared runtime dependencies:
+
+  rosdep install --from-paths src --ignore-src -r -y
+
 ### Quick start
 
 1. Build the workspace (from workspace root):
@@ -42,11 +52,25 @@ Or with the launch file:
 
    ros2 launch arduino_bridge camera_arduino_launch.py video_source:=rpicam video_width:=1280 video_height:=720 video_fps:=30
 
+If you're using a USB camera, prefer a V4L2 device path (e.g. `/dev/video0`) or use the shorthand `video_source:=usb` / `video_source:=auto` to let the node pick the first working `/dev/video*` device:
+
+   ros2 run arduino_bridge camera_detect --ros-args -p video_source:=/dev/video0 -p show_window:=false
+
+   ros2 run arduino_bridge camera_detect --ros-args -p video_source:=usb -p show_window:=false
+
+Device-name note: Arduino boards expose a serial device (`/dev/ttyACM0`, `/dev/ttyACM1`, ...). USB cameras appear under `/dev/video*` (not `ttyACM*`), so the camera will not show up as `ttyACM1` even if both devices are USB-connected.
+
 Run both nodes with a single launch (recommended):
 
    ros2 launch arduino_bridge camera_arduino_launch.py
 
-Run inside your Raspberry Pi Docker container (ROS2 Jazzy image):
+Build a custom Jazzy image (includes `python3-serial` + `nano`):
+
+```sh
+docker build -t ros:jazzy-perception-custom -f Dockerfile .
+```
+
+Run the container (expose serial + camera devices):
 
 ```sh
 docker run -it --rm \
@@ -54,8 +78,11 @@ docker run -it --rm \
   --device=/dev/video0 \
   --group-add dialout \
   -v ~/ros2_ws:/ros2_ws \
-  ros:jazzy-perception
+  ros:jazzy-perception-custom
 ```
+
+Notes:
+- The custom image installs `python3-serial` and `nano` so you don't need to apt-install them at runtime.
 
 Then inside the container:
 
