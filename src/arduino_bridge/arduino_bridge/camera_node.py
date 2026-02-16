@@ -38,7 +38,7 @@ class CameraDetectNode(Node):
         super().__init__('camera_detect')
 
         # parameters
-        self.declare_parameter('video_source', '0')
+        self.declare_parameter('video_source', '/dev/video0')
         self.declare_parameter('video_width', 640)
         self.declare_parameter('video_height', 480)
         self.declare_parameter('video_fps', 30)
@@ -46,7 +46,8 @@ class CameraDetectNode(Node):
         self.declare_parameter('min_area', 2000)
         self.declare_parameter('show_window', False)
 
-        src = self.get_parameter('video_source').value
+        raw_src = self.get_parameter('video_source').value
+        src = raw_src
         self.video_width = int(self.get_parameter('video_width').value)
         self.video_height = int(self.get_parameter('video_height').value)
         self.video_fps = int(self.get_parameter('video_fps').value)
@@ -76,13 +77,18 @@ class CameraDetectNode(Node):
                 gst_pipeline = src[4:]
                 self.get_logger().info('Using user-specified GStreamer pipeline for VideoCapture')
 
+        capture_api = cv2.CAP_ANY
+        if isinstance(src, int) or (isinstance(src, str) and src.startswith('/dev/video')):
+            capture_api = cv2.CAP_V4L2
+            self.get_logger().info('Forcing V4L2 backend for local video device')
+
         if gst_pipeline:
             self._cap = cv2.VideoCapture(gst_pipeline, cv2.CAP_GSTREAMER)
         else:
-            self._cap = cv2.VideoCapture(src)
+            self._cap = cv2.VideoCapture(src, capture_api)
 
         if not self._cap.isOpened():
-            self.get_logger().error(f'Cannot open video source: {src}')
+            self.get_logger().error(f'Cannot open video source: {raw_src}')
             raise RuntimeError(f'Cannot open video source: {src}')
 
         self.pub = self.create_publisher(String, 'detected_colors', 10)

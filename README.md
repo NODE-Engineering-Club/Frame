@@ -27,9 +27,9 @@ This package contains:
 
    ros2 run arduino_bridge arduino_serial --ros-args -p serial_port:=/dev/ttyACM0
 
-4. Run the camera detector (use `video_source` to change camera device):
+4. Run the camera detector (use `video_source` to change camera device). A USB webcam usually appears as `/dev/video0`:
 
-   ros2 run arduino_bridge camera_detect --ros-args -p video_source:=0 -p show_window:=false
+   ros2 run arduino_bridge camera_detect --ros-args -p video_source:=/dev/video0 -p show_window:=false
 
 If you're using a Raspberry Pi camera (libcamera), set `video_source:=rpicam` or pass a GStreamer pipeline prefixed with `gst:`. You can also tune the capture resolution and fps:
 
