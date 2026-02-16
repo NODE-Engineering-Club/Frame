@@ -38,7 +38,7 @@ class CameraDetectNode(Node):
         super().__init__('camera_detect')
 
         # parameters
-        self.declare_parameter('video_source', '/dev/video0')
+        self.declare_parameter('video_source', '/dev/video1')
         self.declare_parameter('video_width', 640)
         self.declare_parameter('video_height', 480)
         self.declare_parameter('video_fps', 30)
